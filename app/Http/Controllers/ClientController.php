@@ -3,20 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use App\Repositories\ClientRepository;
 use Illuminate\Http\Request;
 
 class ClientController extends Controller
 {
-    public function __construct()
+    protected $clientRepository;
+    public function __construct(ClientRepository $clientRepository)
     {
         $this->middleware(['auth', 'auto_check_premission']);
+        $this->clientRepository = $clientRepository;
     }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $clients = Client::paginate(20);
+        $clients = $this->clientRepository->index();
         return view('Clients.index', compact('clients'));
     }
 
@@ -57,11 +60,15 @@ class ClientController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $client = Client::findOrFail($id);
-        $client->update([
-            'active' => $request->active,
+        $request->validate([
+            'active' => "required|boolean"
         ]);
-        return redirect()->back()->with('success', 'تم تحديث حاله العميل بنجاح');
+
+        $client = $this->clientRepository->update($request->all(), $id);
+        if ($client) {
+            return redirect()->back()->with('success', 'تم تحديث حاله العميل بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 
     /**
@@ -69,11 +76,13 @@ class ClientController extends Controller
      */
     public function destroy(string $id)
     {
-        $client = Client::findOrFail($id);
+        $client = $this->clientRepository->destroy($id);
         if ($client) {
-            unlink("./" . parse_url($client->image)['path']);
+            if (isset($client['image'])) {
+                unlink("./" . parse_url($client['image'])['path']);
+            }
+            return redirect()->back()->with('success', 'تم حذف العميل بنجاح');
         }
-        $client->delete();
-        return redirect()->back()->with('success', 'تم حذف العميل بنجاح');
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 }

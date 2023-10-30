@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Client;
 
 use App\Http\Controllers\Controller;
 use App\Interfaces\MainClientInterface;
+use App\Mostafa\Status;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -18,16 +19,19 @@ class MainClientController extends Controller
 
     public function restaurants(Request $request)
     {
-        return $this->clientInterface->restaurants($request);
+        $restaurants = $this->clientInterface->restaurants($request);
+        return apiResponse(200, 'success', $restaurants);
     }
-
 
 
     public function restaurant($id)
     {
-        return $this->clientInterface->restaurant($id);
+        $restaurant = $this->clientInterface->restaurant($id);
+        if (!$restaurant) {
+            return apiResponse(200, 'Restaurant Is Not Found');
+        }
+        return apiResponse(200, 'success', $restaurant);
     }
-
 
 
     public function newOrder(Request $request)
@@ -50,20 +54,29 @@ class MainClientController extends Controller
 
     public function myOrders(Request $request)
     {
-        return $this->clientInterface->myOrders($request);
+        $orders = $this->clientInterface->myOrders($request);
+        return apiResponse(200, 'success', $orders);
     }
 
 
 
     public function cancelOrder(Request $request, $id)
     {
-        return $this->clientInterface->cancelOrder($request, $id);
+        $order = $this->clientInterface->cancelOrder($request, $id);
+        return 1;
     }
 
 
     public function confirmOrder(Request $request, $id)
     {
-        return $this->clientInterface->confirmOrder($request, $id);
+        $order = $this->clientInterface->confirmOrder($request, $id);
+        if ($order) {
+            if ($order->status == Status::ACCEPTED) {
+                return apiResponse(200, 'تم تاكيد استلام الطلب بنجاح');
+            }
+            return apiResponse(200, 'لم يتم الموافقه علي الطلب');
+        }
+        return apiResponse(200, 'الطلب غير موجود');
     }
 
 
@@ -76,6 +89,10 @@ class MainClientController extends Controller
         if ($validator->fails()) {
             return apiResponse(401, 'errors', $validator->errors());
         }
-        return $this->clientInterface->addReview($request);
+        $review = $this->clientInterface->addReview($request);
+        if ($review) {
+            return apiResponse(200, 'تم الارسال بنجاح');
+        }
+        return apiResponse(200, "حدث خطأ");
     }
 }

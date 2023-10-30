@@ -148,7 +148,7 @@ class AuthRestaurantController extends Controller
             return apiResponse(401, 'errors', $validator->errors());
         }
 
-        $data = $request->except('image');
+        $data = $request->except('image', 'password');
         if ($request->hasFile('image')) {
             $image_name = uniqid(5) . $request->file('image')->getClientOriginalName();
             $data['image'] = $image_name;
@@ -156,7 +156,7 @@ class AuthRestaurantController extends Controller
             $request->file('image')->storeAs('', $image_name, 'restaurants');
         }
 
-        if ($request->has('password')) {
+        if ($request->has('password') && !empty($request->password)) {
             $data['password'] = bcrypt($request->password);
         }
         $category_ids =  $request->category_id;

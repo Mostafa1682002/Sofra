@@ -52,11 +52,13 @@ Route::group(['prefix' => "v1"], function () {
         //Main Restaurant
         Route::group(['controller' => MainResturantController::class, 'middleware' => 'auth:api_restaurant'], function () {
             //Products
+            Route::get('products', 'products');
             Route::post('create-product', 'createProduct');
             Route::get('show-product/{id}', 'showProduct');
             Route::post('update-product/{id}', 'updateProduct');
             Route::post('delete-product/{id}', 'deleteProduct');
             //Offers
+            Route::get('offers', 'offers');
             Route::post('create-offer', 'createOffer');
             Route::get('show-offer/{id}', 'showOffer');
             Route::post('update-offer/{id}', 'updateOffer');

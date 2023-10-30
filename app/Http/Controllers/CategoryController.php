@@ -3,13 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Repositories\CategoryRepository;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    public function __construct()
+    protected $categoryRepository;
+
+    public function __construct(CategoryRepository $categoryRepository)
     {
         $this->middleware(['auth', 'auto_check_premission']);
+        $this->categoryRepository = $categoryRepository;
     }
 
     /**
@@ -17,7 +21,7 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $categories = Category::paginate(15);
+        $categories = $this->categoryRepository->index();
         return view('Categories.index', compact('categories'));
     }
 
@@ -37,9 +41,11 @@ class CategoryController extends Controller
         $request->validate([
             'name' => "required|unique:categories,name"
         ]);
-
-        Category::create($request->all());
-        return  redirect()->back()->with('success', 'تم اضافه القسم بنجاح');
+        $category = $this->categoryRepository->store($request->all());
+        if ($category) {
+            return  redirect()->back()->with('success', 'تم اضافه القسم بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 
     /**
@@ -67,8 +73,11 @@ class CategoryController extends Controller
             'name' => "required|unique:categories,name,$id"
         ]);
 
-        Category::findOrFail($id)->update($request->all());
-        return  redirect()->back()->with('success', 'تم تعديل القسم بنجاح');
+        $category = $this->categoryRepository->update($request->all(), $id);
+        if ($category) {
+            return  redirect()->back()->with('success', 'تم تعديل القسم بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 
     /**
@@ -76,7 +85,10 @@ class CategoryController extends Controller
      */
     public function destroy(string $id)
     {
-        Category::findOrFail($id)->delete();
-        return  redirect()->back()->with('success', 'تم حذف القسم بنجاح');
+        $category = $this->categoryRepository->destroy($id);
+        if ($category) {
+            return  redirect()->back()->with('success', 'تم حذف القسم بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 }

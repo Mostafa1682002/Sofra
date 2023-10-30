@@ -3,20 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\PaymentType;
+use App\Repositories\PaymentTypeRepository;
 use Illuminate\Http\Request;
 
 class PaymentTypeController extends Controller
 {
-    public function __construct()
+    protected $paymentTypeRepository;
+    public function __construct(PaymentTypeRepository $paymentTypeRepository)
     {
         $this->middleware(['auth', 'auto_check_premission']);
+        $this->paymentTypeRepository = $paymentTypeRepository;
     }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $payment_types = PaymentType::paginate(15);
+        $payment_types = $this->paymentTypeRepository->index();
         return view('Payments.index', compact('payment_types'));
     }
     /**
@@ -33,8 +36,11 @@ class PaymentTypeController extends Controller
             'name' => "required|unique:payment_types,name"
         ]);
 
-        PaymentType::create($request->all());
-        return  redirect()->back()->with('success', 'تم اضافه طريقة الدفع بنجاح');
+        $payment_types = $this->paymentTypeRepository->store($request->all());
+        if ($payment_types) {
+            return  redirect()->back()->with('success', 'تم اضافه طريقة الدفع بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 
     /**
@@ -61,9 +67,11 @@ class PaymentTypeController extends Controller
         $request->validate([
             'name' => "required|unique:payment_types,name,$id"
         ]);
-
-        PaymentType::findOrFail($id)->update($request->all());
-        return  redirect()->back()->with('success', 'تم تعديل طريقة الدفع بنجاح');
+        $payment_types = $this->paymentTypeRepository->update($request->all(), $id);
+        if ($payment_types) {
+            return  redirect()->back()->with('success', 'تم تعديل طريقة الدفع بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 
     /**
@@ -71,7 +79,10 @@ class PaymentTypeController extends Controller
      */
     public function destroy(string $id)
     {
-        PaymentType::findOrFail($id)->delete();
-        return  redirect()->back()->with('success', 'تم حذف طريقة الدفع بنجاح');
+        $payment_types = $this->paymentTypeRepository->destroy($id);
+        if ($payment_types) {
+            return  redirect()->back()->with('success', 'تم حذف طريقة الدفع بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 }

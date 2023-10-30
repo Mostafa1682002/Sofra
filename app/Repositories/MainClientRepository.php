@@ -25,16 +25,13 @@ class MainClientRepository implements MainClientInterface
                 }
             })
             ->paginate(10);
-        return apiResponse(200, 'success', $restaurants);
+        return $restaurants;
     }
 
     public function restaurant($id)
     {
         $restaurant = Restaurant::find($id)->with(['products', 'clients'])->first();
-        if (!$restaurant) {
-            return apiResponse(200, 'Restaurant Is Not Found');
-        }
-        return apiResponse(200, 'success', $restaurant);
+        return $restaurant;
     }
 
     public function newOrder($request)
@@ -120,7 +117,7 @@ class MainClientRepository implements MainClientInterface
                     $query->where('status', Status::CANCELED)->orWhere('status', Status::DELEIVERED);
                 }
             })->with('products')->latest()->paginate(10);
-        return apiResponse(200, 'success', $orders);
+        return $orders;
     }
 
     public function cancelOrder($request, $id)
@@ -158,26 +155,20 @@ class MainClientRepository implements MainClientInterface
     public function confirmOrder($request, $id)
     {
         $order = $request->user()->orders->where('id', $id)->first();
-        if (!$order) {
-            return apiResponse(200, 'الطلب غير موجود');
+        if ($order && $order->status == Status::ACCEPTED) {
+            $order->update(['confirmed_by_client' => 1]);
         }
-
-        if ($order->status != Status::ACCEPTED) {
-            return apiResponse(200, 'لم يتم الموافقه علي الطلب');
-        }
-
-        $order->update(['confirmed_by_client' => 1]);
-        return apiResponse(200, 'تم تاكيد استلام الطلب بنجاح');
+        return $order;
     }
 
     public function addReview($request)
     {
-        $request->user()->restaurants()->attach([
+        $review = $request->user()->restaurants()->attach([
             $request->restaurant_id => [
                 'rate' => $request->rate,
                 'comment' =>  $request->comment ?? 'NULL',
             ]
         ]);
-        return apiResponse(200, 'تم الارسال بنجاح');
+        return $review;
     }
 }

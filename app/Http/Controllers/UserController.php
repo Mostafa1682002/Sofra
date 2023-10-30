@@ -3,22 +3,26 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Repositories\UserRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
-    public function __construct()
+    protected $userRepository;
+
+    public function __construct(UserRepository $userRepository)
     {
         $this->middleware(['auth', 'auto_check_premission']);
+        $this->userRepository = $userRepository;
     }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $users = User::orderBy('id', 'DESC')->paginate(20);
+        $users = $this->userRepository->index();
         return view('Users.index', compact('users'));
     }
 
@@ -27,7 +31,7 @@ class UserController extends Controller
      */
     public function create()
     {
-        $roles = Role::all();
+        $roles = $this->userRepository->create();
         return view('Users.create', compact('roles'));
     }
 
@@ -44,9 +48,12 @@ class UserController extends Controller
         ]);
         $data = $request->all();
         $data['password'] = bcrypt($request->password);
-        $user = User::create($data);
-        $user->assignRole($request->input('roles'));
-        return redirect()->route('users.index')->with('success', 'تم اضافة مستخدم جديد بنجاح');
+
+        $user = $this->userRepository->store($data);
+        if ($user) {
+            return redirect()->route('users.index')->with('success', 'تم اضافة مستخدم جديد بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 
     /**
@@ -62,10 +69,8 @@ class UserController extends Controller
      */
     public function edit(string $id)
     {
-        $user = User::find($id);
-        $roles = Role::all();
-        $userRole = $user->roles->pluck('name', 'name')->all();
-        return view('Users.edite', compact('user', 'roles', 'userRole'));
+        $data = $this->userRepository->edit($id);
+        return view('Users.edite', $data);
     }
 
     /**
@@ -80,17 +85,17 @@ class UserController extends Controller
             'password' => "confirmed"
         ]);
 
-        $user = User::findOrFail($id);
 
         $data = $request->except('password');
         if ($request->has('password') && !empty($request->password)) {
             $data['password'] = bcrypt($request->password);
         }
-        $user->update($data);
-        DB::table('model_has_roles')->where('model_id', $id)->delete();
-        $user->assignRole($request->input('roles'));
 
-        return redirect()->back()->with('success', 'تم تحديث بيانات المستخدم بنجاح');
+        $user = $this->userRepository->update($data, $id);
+        if ($user) {
+            return redirect()->back()->with('success', 'تم تحديث بيانات المستخدم بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 
     /**
@@ -98,8 +103,10 @@ class UserController extends Controller
      */
     public function destroy(string $id)
     {
-        $user = User::findOrFail($id);
-        $user->delete();
-        return redirect()->route('users.index')->with('success', 'تم حذف المستخدم بنجاح');
+        $user = $this->userRepository->destroy($id);
+        if ($user) {
+            return redirect()->route('users.index')->with('success', 'تم حذف المستخدم بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 }

@@ -2,24 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\City;
-use App\Models\Regoin;
+use App\Repositories\RegoinRepository;
 use Illuminate\Http\Request;
 
 class RegoinController extends Controller
 {
-    public function __construct()
+    protected $regoinRepository;
+    public function __construct(RegoinRepository $regoinRepository)
     {
         $this->middleware(['auth', 'auto_check_premission']);
+        $this->regoinRepository = $regoinRepository;
     }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $regoins = Regoin::paginate(15);
-        $cities = City::all();
-        return view('Regoins.index', compact('regoins', 'cities'));
+        $data = $this->regoinRepository->index();
+        return view('Regoins.index', $data);
     }
 
     /**
@@ -39,8 +39,11 @@ class RegoinController extends Controller
             'name' => "required",
             'city_id' => "required|exists:cities,id"
         ]);
-        Regoin::create($request->all());
-        return  redirect()->back()->with('success', 'تم اضافه الحي بنجاح');
+        $regoin = $this->regoinRepository->store($request->all());
+        if ($regoin) {
+            return  redirect()->back()->with('success', 'تم اضافه الحي بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 
     /**
@@ -68,8 +71,11 @@ class RegoinController extends Controller
             'name' => "required",
             'city_id' => "required|exists:cities,id"
         ]);
-        Regoin::findOrFail($id)->update($request->all());
-        return  redirect()->back()->with('success', 'تم تعديل الحي بنجاح');
+        $regoin = $this->regoinRepository->update($request->all(), $id);
+        if ($regoin) {
+            return  redirect()->back()->with('success', 'تم تعديل الحي بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 
     /**
@@ -77,7 +83,10 @@ class RegoinController extends Controller
      */
     public function destroy(string $id)
     {
-        Regoin::findOrFail($id)->delete();
-        return  redirect()->back()->with('success', 'تم حذف الحي بنجاح');
+        $regoin = $this->regoinRepository->destroy($id);
+        if ($regoin) {
+            return  redirect()->back()->with('success', 'تم حذف الحي بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 }

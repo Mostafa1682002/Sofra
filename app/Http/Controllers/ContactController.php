@@ -3,20 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\Contact;
+use App\Repositories\ContactRepository;
 use Illuminate\Http\Request;
 
 class ContactController extends Controller
 {
-    public function __construct()
+    protected $contactRepository;
+    public function __construct(ContactRepository $contactRepository)
     {
         $this->middleware(['auth', 'auto_check_premission']);
+        $this->contactRepository = $contactRepository;
     }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $contacts = Contact::paginate(10);
+        $contacts = $this->contactRepository->index();
         return view('Contacts.index', compact('contacts'));
     }
 
@@ -65,7 +68,10 @@ class ContactController extends Controller
      */
     public function destroy(string $id)
     {
-        Contact::findOrFail($id)->delete();
-        return redirect()->back()->with('success', 'تم حذف الرساله بنجاح');
+        $contact = $this->contactRepository->destroy($id);
+        if ($contact) {
+            return redirect()->back()->with('success', 'تم حذف الرساله بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 }

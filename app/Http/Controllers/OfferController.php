@@ -3,20 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\Offer;
+use App\Repositories\OfferRepository;
 use Illuminate\Http\Request;
 
 class OfferController extends Controller
 {
-    public function __construct()
+    protected $offerRepository;
+    public function __construct(OfferRepository $offerRepository)
     {
         $this->middleware(['auth', 'auto_check_premission']);
+        $this->offerRepository = $offerRepository;
     }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $offers = Offer::paginate(10);
+        $offers = $this->offerRepository->index();
         return view('Offers.index', compact('offers'));
     }
 
@@ -65,9 +68,13 @@ class OfferController extends Controller
      */
     public function destroy(string $id)
     {
-        $offer = Offer::findOrFail($id);
-        unlink("./" . parse_url($offer->image)['path']);
-        $offer->delete();
-        return redirect()->back()->with('success', 'تم حذف العرض بنجاح');
+        $offer = $this->offerRepository->destroy($id);
+        if ($offer) {
+            if (isset($offer['image'])) {
+                unlink("./" . parse_url($offer['image'])['path']);
+            }
+            return redirect()->back()->with('success', 'تم حذف العرض بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 }

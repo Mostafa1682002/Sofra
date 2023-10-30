@@ -141,7 +141,7 @@ class AuthClientController extends Controller
             return apiResponse(401, 'errors', $validator->errors());
         }
 
-        $data = $request->except('image');
+        $data = $request->except('image', 'password');
         if ($request->hasFile('image')) {
             $image_name = uniqid(5) . $request->file('image')->getClientOriginalName();
             $data['image'] = $image_name;
@@ -149,10 +149,9 @@ class AuthClientController extends Controller
             $request->file('image')->storeAs('', $image_name, 'clients');
         }
 
-        if ($request->has('password')) {
+        if ($request->has('password') && !empty($request->password)) {
             $data['password'] = bcrypt($request->password);
         }
-
         $client->update($data);
         return apiResponse(200, 'update profile success', [
             'api_token' => $client->api_token,

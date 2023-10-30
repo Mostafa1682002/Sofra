@@ -3,20 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Repositories\OrderRepository;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    public function __construct()
+    protected $orderRepository;
+    public function __construct(OrderRepository $orderRepository)
     {
         $this->middleware(['auth', 'auto_check_premission']);
+        $this->orderRepository = $orderRepository;
     }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $orders = Order::paginate(20);
+        $orders = $this->orderRepository->index();
         return view('Orders.index', compact('orders'));
     }
 
@@ -41,8 +44,7 @@ class OrderController extends Controller
      */
     public function show(string $id)
     {
-        $order = Order::findOrFail($id);
-        // return $order->products;
+        $order = $this->orderRepository->show($id);
         return view('Orders.show', compact('order'));
     }
 

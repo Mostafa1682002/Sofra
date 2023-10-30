@@ -2,21 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Setting;
+use App\Repositories\SettingRepository;
 use Illuminate\Http\Request;
 
 class SettingController extends Controller
 {
-    public function __construct()
+    protected $settingRepository;
+    public function __construct(SettingRepository $settingRepository)
     {
         $this->middleware(['auth', 'auto_check_premission']);
+        $this->settingRepository = $settingRepository;
     }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $setting = Setting::first();
+        $setting = $this->settingRepository->index();
         return view('Settings.index', compact('setting'));
     }
 
@@ -62,8 +64,11 @@ class SettingController extends Controller
             'about_app' => "required",
         ]);
 
-        Setting::findOrFail($id)->update($request->all());
-        return redirect()->back()->with('success', 'تم تعديل البيانات بنجاح');
+        $setting = $this->settingRepository->update($request->all(), $id);
+        if ($setting) {
+            return redirect()->back()->with('success', 'تم تعديل البيانات بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 
     /**

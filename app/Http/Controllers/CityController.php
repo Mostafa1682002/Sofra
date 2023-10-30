@@ -3,20 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\City;
+use App\Repositories\CityRepository;
 use Illuminate\Http\Request;
 
 class CityController extends Controller
 {
-    public function __construct()
+    protected $cityRepository;
+    public function __construct(CityRepository $cityRepository)
     {
         $this->middleware(['auth', 'auto_check_premission']);
+        $this->cityRepository = $cityRepository;
     }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $cities = City::paginate(15);
+        $cities = $this->cityRepository->index();
         return view('Cities.index', compact('cities'));
     }
 
@@ -29,8 +32,11 @@ class CityController extends Controller
             'name' => "required|unique:cities,name"
         ]);
 
-        City::create($request->all());
-        return  redirect()->back()->with('success', 'تم اضافه المدينه بنجاح');
+        $city = $this->cityRepository->store($request->all());
+        if ($city) {
+            return  redirect()->back()->with('success', 'تم اضافه المدينه بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 
 
@@ -43,8 +49,12 @@ class CityController extends Controller
             'name' => "required|unique:cities,name,$id"
         ]);
 
-        City::findOrFail($id)->update($request->all());
-        return  redirect()->back()->with('success', 'تم تعديل المدينه بنجاح');
+
+        $city = $this->cityRepository->update($request->all(), $id);
+        if ($city) {
+            return  redirect()->back()->with('success', 'تم تعديل المدينه بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 
     /**
@@ -52,7 +62,10 @@ class CityController extends Controller
      */
     public function destroy(string $id)
     {
-        City::findOrFail($id)->delete();
-        return  redirect()->back()->with('success', 'تم حذف المدينه بنجاح');
+        $city = $this->cityRepository->destroy($id);
+        if ($city) {
+            return  redirect()->back()->with('success', 'تم حذف المدينه بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 }

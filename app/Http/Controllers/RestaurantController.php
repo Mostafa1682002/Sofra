@@ -3,20 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\Restaurant;
+use App\Repositories\RestaurantRepository;
 use Illuminate\Http\Request;
 
 class RestaurantController extends Controller
 {
-    public function __construct()
+    protected $restaurantRepoitory;
+    public function __construct(RestaurantRepository $restaurantRepoitory)
     {
         $this->middleware(['auth', 'auto_check_premission']);
+        $this->restaurantRepoitory = $restaurantRepoitory;
     }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $restaurants = Restaurant::paginate(15);
+        $restaurants = $this->restaurantRepoitory->index();
         return view('Restaurants.index', compact('restaurants'));
     }
 
@@ -60,11 +63,12 @@ class RestaurantController extends Controller
         $request->validate([
             'active' => "required|boolean"
         ]);
-        // return $request->active;
-        Restaurant::findOrFail($id)->update([
-            'active' => $request->active
-        ]);
-        return redirect()->back()->with('success', 'تم نعديل حالة تفعيل المطعم بنجاح');
+
+        $restaurant = $this->restaurantRepoitory->update($request->only('active'), $id);
+        if ($restaurant) {
+            return redirect()->back()->with('success', 'تم نعديل حالة تفعيل المطعم بنجاح');
+        }
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 
     /**
@@ -72,11 +76,13 @@ class RestaurantController extends Controller
      */
     public function destroy(string $id)
     {
-        $restaurant = Restaurant::findOrFail($id);
+        $restaurant = $this->restaurantRepoitory->destroy($id);
         if ($restaurant) {
-            unlink("./" . parse_url($restaurant->image)['path']);
+            if (isset($restaurant['image'])) {
+                unlink("./" . parse_url($restaurant['image'])['path']);
+            }
+            return redirect()->back()->with('success', 'تم حذف المطعم بنجاح');
         }
-        $restaurant->delete();
-        return redirect()->back()->with('success', 'تم حذف المطعم بنجاح');
+        return  redirect()->back()->with('error', 'حدث خطأ');
     }
 }

@@ -22,7 +22,7 @@ class Client  extends Authenticatable
     protected function image(): Attribute
     {
         return Attribute::make(
-            get: fn (string $value) => asset("uploads/restauranta/$value"),
+            get: fn (string $value) => asset("uploads/clients/$value"),
             // set: fn (string $value) => strtolower($value),
         );
     }
